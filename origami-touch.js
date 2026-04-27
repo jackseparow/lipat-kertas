@@ -6,31 +6,47 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setClearColor(0x0f0c29);
 document.body.appendChild(renderer.domElement);
 
-scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-const light = new THREE.PointLight(0xffffff, 1);
-light.position.set(5, 10, 5);
-scene.add(light);
-
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
 controls.enableDamping = true;
 
+// Variabel Global
 const segments = 100;
 let geometry, material, paper;
 let foldHistory = []; 
-let creaseLines = []; 
+let canvas, ctx, texture;
+
+// --- SISTEM TEKSTUR JEJAK (CREASE TEXTURE) ---
+function initTexture() {
+    canvas = document.createElement('canvas');
+    canvas.width = 1024;
+    canvas.height = 1024;
+    ctx = canvas.getContext('2d');
+    
+    // Background kertas putih
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    texture = new THREE.CanvasTexture(canvas);
+    return texture;
+}
 
 function initKertas() {
     geometry = new THREE.PlaneGeometry(4, 4, segments, segments);
-    material = new THREE.MeshStandardMaterial({ color: 0xffffff, side: THREE.DoubleSide, roughness: 0.5 });
+    material = new THREE.MeshStandardMaterial({ 
+        map: initTexture(), 
+        side: THREE.DoubleSide, 
+        roughness: 0.6 
+    });
     paper = new THREE.Mesh(geometry, material);
     paper.rotation.x = -Math.PI / 4;
     scene.add(paper);
     
-    // Simpan state awal (posisi datar)
     foldHistory = [geometry.attributes.position.array.slice()];
 }
+
 initKertas();
+scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
 const markerA = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0xff4757 }));
 const markerB = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0x2ed573 }));
@@ -42,11 +58,9 @@ camera.position.set(0, 1, 6);
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let pointA = null;
-const statusLabel = document.getElementById('status');
 
 renderer.domElement.addEventListener('pointerdown', (event) => {
     if (event.button !== 0) return;
-
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -55,22 +69,19 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 
     if (intersects.length > 0) {
         const point = intersects[0].point;
-
         if (!pointA) {
             pointA = point.clone();
             markerA.position.copy(pointA);
             markerA.visible = true;
-            statusLabel.innerText = "Pilih Titik Tujuan...";
+            document.getElementById('status').innerText = "Pilih Titik Tujuan...";
         } else {
             const pointB = point.clone();
             markerB.position.copy(pointB);
             markerB.visible = true;
-            
             jalankanLipatan(pointA, pointB);
-            
             pointA = null;
             setTimeout(() => {
-                statusLabel.innerText = "Pilih Titik Asal...";
+                document.getElementById('status').innerText = "Pilih Titik Asal...";
                 markerA.visible = markerB.visible = false;
             }, 500);
         }
@@ -78,7 +89,6 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 });
 
 function jalankanLipatan(A, B) {
-    // Simpan posisi SEBELUM melipat ke dalam history
     foldHistory.push(paper.geometry.attributes.position.array.slice());
 
     const pos = paper.geometry.attributes.position;
@@ -87,6 +97,9 @@ function jalankanLipatan(A, B) {
 
     paper.updateMatrixWorld();
     const invMat = new THREE.Matrix4().copy(paper.matrixWorld).invert();
+
+    // Gambar jejak pada tekstur sebelum vertex diubah
+    gambarJejakDiTekstur(mid, normal);
 
     for (let i = 0; i < pos.count; i++) {
         let vWorld = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i)).applyMatrix4(paper.matrixWorld);
@@ -100,31 +113,39 @@ function jalankanLipatan(A, B) {
         }
     }
     pos.needsUpdate = true;
-    buatGarisJejak(mid, normal);
 }
 
-function buatGarisJejak(mid, normal) {
-    // Membuat garis biru yang menempel di kertas sebagai jejak simetri
-    const lineDir = new THREE.Vector3(-normal.y, normal.x, 0).normalize();
-    const start = mid.clone().add(lineDir.clone().multiplyScalar(4));
-    const end = mid.clone().sub(lineDir.clone().multiplyScalar(4));
-
-    const lineGeo = new THREE.BufferGeometry().setFromPoints([start, end]);
-    const lineMat = new THREE.LineBasicMaterial({ color: 0x3498db, transparent: true, opacity: 0.6 });
-    const line = new THREE.Line(lineGeo, lineMat);
+function gambarJejakDiTekstur(midWorld, normalWorld) {
+    // Konversi koordinat 3D ke UV (0 ke 1024)
+    paper.updateMatrixWorld();
+    const localMid = midWorld.clone().applyMatrix4(new THREE.Matrix4().copy(paper.matrixWorld).invert());
     
-    scene.add(line);
-    creaseLines.push(line);
+    // Normal dalam ruang lokal kertas
+    const localNormal = normalWorld.clone().transformDirection(paper.matrixWorld.clone().invert());
+
+    // Koordinat Canvas (0,0 ada di tengah, kita ubah ke 0-1024)
+    // x: -2 s/d 2 -> 0 s/d 1024 | y: -2 s/d 2 -> 1024 s/d 0 (canvas y terbalik)
+    const centerX = (localMid.x + 2) / 4 * 1024;
+    const centerY = (1 - (localMid.y + 2) / 4) * 1024;
+
+    // Arah garis (tegak lurus normal lokal)
+    const dirX = -localNormal.y;
+    const dirY = localNormal.x;
+
+    ctx.strokeStyle = '#3498db';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(centerX + dirX * 2000, centerY - dirY * 2000);
+    ctx.lineTo(centerX - dirX * 2000, centerY + dirY * 2000);
+    ctx.stroke();
+    
+    texture.needsUpdate = true;
 }
 
-// Menghubungkan fungsi ke global window agar bisa dipanggil tombol HTML
 window.bukaLipatan = function() {
     if (foldHistory.length > 1) {
-        // Ambil state posisi sebelumnya
         const previousState = foldHistory.pop();
         const pos = paper.geometry.attributes.position;
-        
-        // Update koordinat vertex secara manual
         for (let i = 0; i < pos.array.length; i++) {
             pos.array[i] = previousState[i];
         }
@@ -134,12 +155,10 @@ window.bukaLipatan = function() {
 
 window.resetKertas = function() {
     scene.remove(paper);
-    creaseLines.forEach(line => scene.remove(line));
-    creaseLines = [];
     initKertas();
     pointA = null;
     markerA.visible = markerB.visible = false;
-    statusLabel.innerText = "Pilih Titik Asal...";
+    document.getElementById('status').innerText = "Pilih Titik Asal...";
 };
 
 function animate() {
