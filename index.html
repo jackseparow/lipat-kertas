@@ -7,28 +7,27 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; }
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #1a1a2e; }
         #overlay {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(255, 255, 255, 0.95); padding: 20px;
-            border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            pointer-events: none; max-width: 320px; z-index: 10;
+            background: rgba(255, 255, 255, 0.9); padding: 20px;
+            border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            pointer-events: none; max-width: 300px; z-index: 100;
         }
         .status-box {
             margin-top: 15px; padding: 10px; border-radius: 6px;
-            background: #e8f4fd; border: 1px solid #3498db;
-            color: #2980b9; font-weight: bold; text-align: center;
-            transition: all 0.3s ease;
+            background: #eef2f3; border-left: 5px solid #3498db;
+            color: #2c3e50; font-weight: bold;
         }
-        h2 { margin: 0 0 10px 0; color: #2c3e50; font-size: 1.2em; }
-        p { margin: 0; color: #7f8c8d; font-size: 0.85em; line-height: 1.5; }
+        h2 { margin: 0 0 10px 0; color: #16213e; font-size: 1.2em; }
+        p { margin: 0; color: #555; font-size: 0.9em; line-height: 1.5; }
     </style>
 </head>
 <body>
     <div id="overlay">
-        <h2>Matematika Lipatan</h2>
-        <p>1. Klik titik yang ingin dipindahkan (Merah).<br>2. Klik titik tujuan lipatan (Hijau).</p>
-        <div id="status" class="status-box">Pilih Titik Asal</div>
+        <h2>Simulasi Lipat Kertas</h2>
+        <p>1. Klik Titik Asal (Merah)<br>2. Klik Titik Tujuan (Hijau)</p>
+        <div id="status" class="status-box">Menunggu Titik Asal...</div>
     </div>
     <script src="origami-touch.js"></script>
 </body>
