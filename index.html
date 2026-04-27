@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Origami Touch: Eksperimen Geometri</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #ecf0f1; }
+        #overlay {
+            position: absolute; top: 20px; left: 20px;
+            background: rgba(255, 255, 255, 0.9); padding: 20px;
+            border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            pointer-events: none; max-width: 300px;
+        }
+        h2 { margin: 0 0 10px 0; color: #2c3e50; font-size: 1.2em; }
+        p { margin: 0; color: #7f8c8d; font-size: 0.9em; line-height: 1.4; }
+        .hint { margin-top: 10px; font-weight: bold; color: #e67e22; }
+    </style>
+</head>
+<body>
+    <div id="overlay">
+        <h2>Origami Touch</h2>
+        <p>Sentuh bagian kertas untuk melipatnya secara otomatis berdasarkan titik koordinat yang kamu pilih.</p>
+        <p class="hint">Klik Kanan/Dua Jari untuk putar kamera.</p>
+    </div>
+    <script src="origami-touch.js"></script>
+</body>
+</html>
