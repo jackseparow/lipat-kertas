@@ -10,23 +10,19 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
 controls.enableDamping = true;
 
-// Variabel Global
 const segments = 100;
 let geometry, material, paper;
 let foldHistory = []; 
 let canvas, ctx, texture;
+let layerStack = 0; // Melacak tumpukan lipatan
 
-// --- SISTEM TEKSTUR JEJAK (CREASE TEXTURE) ---
 function initTexture() {
     canvas = document.createElement('canvas');
     canvas.width = 1024;
     canvas.height = 1024;
     ctx = canvas.getContext('2d');
-    
-    // Background kertas putih
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
     texture = new THREE.CanvasTexture(canvas);
     return texture;
 }
@@ -36,13 +32,16 @@ function initKertas() {
     material = new THREE.MeshStandardMaterial({ 
         map: initTexture(), 
         side: THREE.DoubleSide, 
-        roughness: 0.6 
+        roughness: 0.6,
+        transparent: true, // Memungkinkan deteksi kedalaman yang lebih baik
+        depthTest: true
     });
     paper = new THREE.Mesh(geometry, material);
     paper.rotation.x = -Math.PI / 4;
     scene.add(paper);
     
     foldHistory = [geometry.attributes.position.array.slice()];
+    layerStack = 0;
 }
 
 initKertas();
@@ -90,6 +89,7 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 
 function jalankanLipatan(A, B) {
     foldHistory.push(paper.geometry.attributes.position.array.slice());
+    layerStack++; // Menambah level tumpukan
 
     const pos = paper.geometry.attributes.position;
     const mid = new THREE.Vector3().addVectors(A, B).multiplyScalar(0.5);
@@ -98,7 +98,6 @@ function jalankanLipatan(A, B) {
     paper.updateMatrixWorld();
     const invMat = new THREE.Matrix4().copy(paper.matrixWorld).invert();
 
-    // Gambar jejak pada tekstur sebelum vertex diubah
     gambarJejakDiTekstur(mid, normal);
 
     for (let i = 0; i < pos.count; i++) {
@@ -109,31 +108,32 @@ function jalankanLipatan(A, B) {
             const reflection = normal.clone().multiplyScalar(2 * dist);
             vWorld.sub(reflection);
             let vLocal = vWorld.applyMatrix4(invMat);
-            pos.setXYZ(i, vLocal.x, vLocal.y, vLocal.z + 0.015);
+            
+            // LOGIKA POCKETING/LOCKING:
+            // Kita gunakan layerStack untuk memberikan offset Z yang berbeda.
+            // Semakin banyak lipatan, semakin besar Z-offset agar kertas masuk ke sela-sela.
+            let pocketOffset = 0.015 * layerStack;
+            pos.setXYZ(i, vLocal.x, vLocal.y, vLocal.z + pocketOffset);
         }
     }
     pos.needsUpdate = true;
 }
 
 function gambarJejakDiTekstur(midWorld, normalWorld) {
-    // Konversi koordinat 3D ke UV (0 ke 1024)
     paper.updateMatrixWorld();
-    const localMid = midWorld.clone().applyMatrix4(new THREE.Matrix4().copy(paper.matrixWorld).invert());
-    
-    // Normal dalam ruang lokal kertas
-    const localNormal = normalWorld.clone().transformDirection(paper.matrixWorld.clone().invert());
+    const invMat = new THREE.Matrix4().copy(paper.matrixWorld).invert();
+    const localMid = midWorld.clone().applyMatrix4(invMat);
+    const localNormal = normalWorld.clone().transformDirection(invMat);
 
-    // Koordinat Canvas (0,0 ada di tengah, kita ubah ke 0-1024)
-    // x: -2 s/d 2 -> 0 s/d 1024 | y: -2 s/d 2 -> 1024 s/d 0 (canvas y terbalik)
     const centerX = (localMid.x + 2) / 4 * 1024;
     const centerY = (1 - (localMid.y + 2) / 4) * 1024;
 
-    // Arah garis (tegak lurus normal lokal)
     const dirX = -localNormal.y;
     const dirY = localNormal.x;
 
     ctx.strokeStyle = '#3498db';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([10, 5]); // Garis putus-putus untuk sisa lipatan profesional
     ctx.beginPath();
     ctx.moveTo(centerX + dirX * 2000, centerY - dirY * 2000);
     ctx.lineTo(centerX - dirX * 2000, centerY + dirY * 2000);
@@ -150,6 +150,7 @@ window.bukaLipatan = function() {
             pos.array[i] = previousState[i];
         }
         pos.needsUpdate = true;
+        if(layerStack > 0) layerStack--;
     }
 };
 
