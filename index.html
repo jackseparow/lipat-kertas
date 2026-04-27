@@ -3,32 +3,51 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Origami Geometri: Titik ke Titik</title>
+    <title>Origami Geometri 3D: Titik ke Titik</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #1a1a2e; }
         #overlay {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(255, 255, 255, 0.9); padding: 20px;
-            border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            pointer-events: none; max-width: 300px; z-index: 100;
+            background: rgba(255, 255, 255, 0.95); padding: 20px;
+            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: none; max-width: 280px; z-index: 100;
         }
         .status-box {
-            margin-top: 15px; padding: 10px; border-radius: 6px;
+            margin-top: 15px; padding: 12px; border-radius: 8px;
             background: #eef2f3; border-left: 5px solid #3498db;
-            color: #2c3e50; font-weight: bold;
+            color: #2c3e50; font-weight: bold; font-size: 0.9em;
         }
         h2 { margin: 0 0 10px 0; color: #16213e; font-size: 1.2em; }
-        p { margin: 0; color: #555; font-size: 0.9em; line-height: 1.5; }
+        p { margin: 0; color: #555; font-size: 0.85em; line-height: 1.5; }
+        
+        /* Tombol Reset */
+        #btn-container {
+            position: absolute; bottom: 30px; right: 30px; display: flex; gap: 10px;
+        }
+        .action-btn {
+            padding: 12px 25px; border: none; border-radius: 50px;
+            background: #e74c3c; color: white; font-weight: bold;
+            cursor: pointer; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: 0.3s;
+        }
+        .action-btn:hover { background: #c0392b; transform: scale(1.05); }
     </style>
 </head>
 <body>
     <div id="overlay">
-        <h2>Simulasi Lipat Kertas</h2>
-        <p>1. Klik Titik Asal (Merah)<br>2. Klik Titik Tujuan (Hijau)</p>
-        <div id="status" class="status-box">Menunggu Titik Asal...</div>
+        <h2>Simulasi Lipat 3D</h2>
+        <p>• <b>Klik Kiri:</b> Pilih Titik (Merah ke Hijau)<br>
+           • <b>Klik Kanan:</b> Putar Perspektif<br>
+           • <b>Scroll:</b> Zoom In/Out</p>
+        <div id="status" class="status-box">Pilih Titik Asal...</div>
     </div>
+
+    <div id="btn-container">
+        <button class="action-btn" onclick="resetKertas()">Reset Kertas</button>
+    </div>
+
     <script src="origami-touch.js"></script>
 </body>
 </html>
