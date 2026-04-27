@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Origami Geometri 3D: Crease Pattern</title>
+    <title>Origami Geometri 3D: Fixed Undo & Crease</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -29,7 +29,6 @@
             pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             transition: 0.2s; min-width: 120px;
         }
-        .btn-fold { background: #3498db; }
         .btn-undo { background: #f39c12; }
         .btn-reset { background: #e74c3c; }
         .action-btn:hover { opacity: 0.9; transform: translateY(-2px); }
@@ -37,15 +36,15 @@
 </head>
 <body>
     <div id="overlay">
-        <h2>Taman Numerasi Origami</h2>
-        <p>• Pilih 2 titik untuk melipat.<br>
-           • Gunakan <b>Buka Lipatan</b> untuk melihat jejak garisnya.</p>
+        <h2>Simulasi Origami</h2>
+        <p>• Klik 2 titik untuk melipat.<br>
+           • Jejak lipatan akan tertinggal saat dibuka.</p>
         <div id="status" class="status-box">Pilih Titik Asal...</div>
     </div>
 
     <div id="btn-container">
-        <button class="action-btn btn-undo" onclick="bukaLipatan()">Buka Lipatan</button>
-        <button class="action-btn btn-reset" onclick="resetKertas()">Reset Total</button>
+        <button class="action-btn btn-undo" onclick="window.bukaLipatan()">Buka Lipatan</button>
+        <button class="action-btn btn-reset" onclick="window.resetKertas()">Reset Total</button>
     </div>
 
     <script src="origami-touch.js"></script>
