@@ -3,8 +3,8 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Origami Geometri 3D: Fixed Interaction</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <title>Origami Geometri 3D: Final Fix</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #0f0c29; }
@@ -20,27 +20,22 @@
             color: #2c3e50; font-weight: bold; font-size: 0.9em;
         }
         h2 { margin: 0 0 10px 0; color: #1a1a2e; font-size: 1.2em; }
-        p { margin: 0; color: #444; font-size: 0.85em; line-height: 1.5; }
-        
         #btn-container {
-            position: absolute; bottom: 30px; right: 30px; display: flex; gap: 10px;
+            position: absolute; bottom: 30px; right: 30px; display: flex; gap: 10px; z-index: 200;
         }
         .action-btn {
             padding: 12px 25px; border: none; border-radius: 50px;
             background: #e74c3c; color: white; font-weight: bold;
             cursor: pointer; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: 0.3s;
         }
-        .action-btn:hover { background: #c0392b; transform: translateY(-3px); }
     </style>
 </head>
 <body>
     <div id="overlay">
         <h2>Simulasi Origami 3D</h2>
-        <p>• <b>Klik Kiri:</b> Melipat (Pilih 2 Titik)<br>
-           • <b>Klik Kanan:</b> Putar Perspektif<br>
-           • <b>Scroll:</b> Zoom</p>
-        <div id="status" class="status-box">Menunggu Titik Asal...</div>
+        <p>• <b>Klik Kiri:</b> Pilih Titik<br>
+           • <b>Klik Kanan:</b> Putar Kamera</p>
+        <div id="status" class="status-box">Pilih Titik Asal...</div>
     </div>
 
     <div id="btn-container">
