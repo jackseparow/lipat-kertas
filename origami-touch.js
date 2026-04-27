@@ -1,4 +1,4 @@
-// --- KONFIGURASI DASAR ---
+// --- INITIALIZATION ---
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -7,40 +7,47 @@ renderer.setClearColor(0x1a1a2e);
 document.body.appendChild(renderer.domElement);
 
 // --- LIGHTING ---
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-scene.add(ambientLight);
-const pointLight = new THREE.PointLight(0xffffff, 1);
-pointLight.position.set(10, 10, 10);
-scene.add(pointLight);
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+sun.position.set(5, 10, 7.5);
+scene.add(sun);
+
+// --- 3D NAVIGATION (OrbitControls) ---
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+// Klik Kiri dikosongkan agar bisa dipakai melipat, Kanan untuk rotasi
+controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+controls.enableDamping = true;
 
 // --- KERTAS ---
-// Gunakan MeshStandardMaterial agar terlihat lebih real
-const geometry = new THREE.PlaneGeometry(4, 4, 128, 128);
+const segments = 128;
+let geometry = new THREE.PlaneGeometry(4, 4, segments, segments);
 const material = new THREE.MeshStandardMaterial({ 
     color: 0xffffff, 
     side: THREE.DoubleSide,
-    flatShading: false
+    roughness: 0.5
 });
-const paper = new THREE.Mesh(geometry, material);
+let paper = new THREE.Mesh(geometry, material);
+// Tidurkan kertas sedikit agar perspektif 3D terasa
+paper.rotation.x = -Math.PI / 4; 
 scene.add(paper);
 
-// --- MARKER (PENANDA) ---
-const markerA = new THREE.Mesh(new THREE.SphereGeometry(0.07), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-const markerB = new THREE.Mesh(new THREE.SphereGeometry(0.07), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+// --- MARKERS ---
+const markerA = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+const markerB = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
 markerA.visible = markerB.visible = false;
 scene.add(markerA, markerB);
 
-camera.position.z = 6;
+camera.position.set(0, 2, 6);
+scene.add(new THREE.GridHelper(10, 10, 0x444444, 0x222222));
 
-// --- LOGIKA INTERAKSI ---
+// --- INTERACTION LOGIC ---
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let pointA = null;
 const statusLabel = document.getElementById('status');
 
 window.addEventListener('mousedown', (event) => {
-    // Hanya proses klik kiri
-    if (event.button !== 0) return;
+    if (event.button !== 0) return; // Hanya respon Klik Kiri
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -52,67 +59,76 @@ window.addEventListener('mousedown', (event) => {
         const point = intersects[0].point;
 
         if (!pointA) {
-            // Pilih titik pertama
             pointA = point.clone();
-            markerA.position.set(pointA.x, pointA.y, 0.1);
+            markerA.position.copy(pointA);
+            markerA.position.z += 0.05; // Sedikit di depan kertas
             markerA.visible = true;
-            markerB.visible = false;
             statusLabel.innerText = "Pilih Titik Tujuan...";
         } else {
-            // Pilih titik kedua
             const pointB = point.clone();
-            markerB.position.set(pointB.x, pointB.y, 0.1);
+            markerB.position.copy(pointB);
+            markerB.position.z += 0.05;
             markerB.visible = true;
             
-            lipatGeometri(pointA, pointB);
+            hitungLipatan(pointA, pointB);
             
-            // Reset
             pointA = null;
             setTimeout(() => {
-                statusLabel.innerText = "Menunggu Titik Asal...";
+                statusLabel.innerText = "Pilih Titik Asal...";
                 markerA.visible = false;
                 markerB.visible = false;
-            }, 1500);
+            }, 1000);
         }
     }
 });
 
-function lipatGeometri(A, B) {
+function hitungLipatan(A, B) {
     const pos = paper.geometry.attributes.position;
-    
-    // Titik tengah (midpoint) dan Normal (arah AB)
     const mid = new THREE.Vector3().addVectors(A, B).multiplyScalar(0.5);
     const normal = new THREE.Vector3().subVectors(B, A).normalize();
 
-    for (let i = 0; i < pos.count; i++) {
-        let P = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+    // Matrix untuk mengubah koordinat world ke lokal (penting karena kertas diputar)
+    const worldToLocal = new THREE.Matrix4().copy(paper.matrixWorld).invert();
 
-        // Hitung jarak titik P ke garis lipat (midpoint)
-        const v = new THREE.Vector3().subVectors(P, mid);
+    for (let i = 0; i < pos.count; i++) {
+        let worldP = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
+        worldP.applyMatrix4(paper.matrixWorld);
+
+        const v = new THREE.Vector3().subVectors(worldP, mid);
         const dot = v.dot(normal);
 
-        // Jika titik P berada di sisi titik A (Asal), lakukan refleksi
         if (dot < 0) {
-            // Rumus Refleksi: P' = P - 2 * (v . normal) * normal
             const reflection = normal.clone().multiplyScalar(2 * dot);
-            P.sub(reflection);
+            worldP.sub(reflection);
             
-            // Set posisi baru dengan sedikit offset Z agar tidak tumpang tindih
-            pos.setXYZ(i, P.x, P.y, P.z + 0.02);
+            // Konversi kembali ke lokal
+            let localP = worldP.applyMatrix4(worldToLocal);
+            pos.setXYZ(i, localP.x, localP.y, localP.z + 0.015);
         }
     }
     pos.needsUpdate = true;
 }
 
+// --- RESET FUNCTION ---
+window.resetKertas = function() {
+    scene.remove(paper);
+    geometry.dispose();
+    geometry = new THREE.PlaneGeometry(4, 4, segments, segments);
+    paper = new THREE.Mesh(geometry, material);
+    paper.rotation.x = -Math.PI / 4;
+    scene.add(paper);
+    pointA = null;
+    markerA.visible = markerB.visible = false;
+    statusLabel.innerText = "Pilih Titik Asal...";
+};
+
 function animate() {
     requestAnimationFrame(animate);
-    // Kita putar sedikit scenerio-nya agar terlihat 3D
-    paper.rotation.y = Math.sin(Date.now() * 0.001) * 0.1;
+    controls.update();
     renderer.render(scene, camera);
 }
 animate();
 
-// Handle Resize
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
