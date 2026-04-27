@@ -12,12 +12,13 @@
             position: absolute; top: 20px; left: 20px;
             background: rgba(255, 255, 255, 0.95); padding: 20px;
             border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.1);
-            pointer-events: none; max-width: 320px;
+            pointer-events: none; max-width: 320px; z-index: 10;
         }
         .status-box {
             margin-top: 15px; padding: 10px; border-radius: 6px;
             background: #e8f4fd; border: 1px solid #3498db;
             color: #2980b9; font-weight: bold; text-align: center;
+            transition: all 0.3s ease;
         }
         h2 { margin: 0 0 10px 0; color: #2c3e50; font-size: 1.2em; }
         p { margin: 0; color: #7f8c8d; font-size: 0.85em; line-height: 1.5; }
@@ -26,7 +27,7 @@
 <body>
     <div id="overlay">
         <h2>Matematika Lipatan</h2>
-        <p>1. Klik titik yang ingin dipindahkan.<br>2. Klik titik tujuan lipatan.</p>
+        <p>1. Klik titik yang ingin dipindahkan (Merah).<br>2. Klik titik tujuan lipatan (Hijau).</p>
         <div id="status" class="status-box">Pilih Titik Asal</div>
     </div>
     <script src="origami-touch.js"></script>
