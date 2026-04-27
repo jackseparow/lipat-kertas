@@ -1,4 +1,3 @@
-// 1. Inisialisasi Scene
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -10,19 +9,37 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
 controls.enableDamping = true;
 
-// 2. State & Geometri
 let currentMode = 'fold'; 
 const segments = 100;
 let geometry, material, paper, canvas, ctx, texture;
 let foldHistory = [];
 let layerStack = 0;
 
+// --- SISTEM TEKSTUR DENGAN WATERMARK SI YO ---
 function initTexture() {
     canvas = document.createElement('canvas');
     canvas.width = 1024; canvas.height = 1024;
     ctx = canvas.getContext('2d');
+    
+    // Background kertas putih bersih
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Memasukkan Watermark Si Yo
+    const img = new Image();
+    img.src = 'siyo.png'; // Pastikan file gambar siyo.png ada di folder GitHub-mu
+    img.onload = function() {
+        ctx.save();
+        ctx.globalAlpha = 0.15; // Mengatur transparansi agar samar (samar seperti tanda air)
+        
+        // Menggambar Si Yo di tengah kertas
+        const size = 500;
+        ctx.drawImage(img, (canvas.width - size)/2, (canvas.height - size)/2, size, size);
+        
+        ctx.restore();
+        texture.needsUpdate = true; // Beritahu Three.js tekstur telah berubah
+    };
+
     texture = new THREE.CanvasTexture(canvas);
     return texture;
 }
@@ -40,10 +57,10 @@ function initKertas() {
     foldHistory = [geometry.attributes.position.array.slice()];
     layerStack = 0;
 }
+
 initKertas();
 scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
-// 3. Marker
 const markerA = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0xff4757 }));
 const markerB = new THREE.Mesh(new THREE.SphereGeometry(0.06), new THREE.MeshBasicMaterial({ color: 0x2ed573 }));
 markerA.visible = markerB.visible = false;
@@ -51,7 +68,6 @@ scene.add(markerA, markerB);
 
 camera.position.set(0, 1, 6);
 
-// 4. Mode Switcher
 window.setMode = function(mode) {
     currentMode = mode;
     document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
@@ -72,13 +88,12 @@ function resetSelection() {
     document.getElementById('status').innerText = "Siap...";
 }
 
-// 5. Interaksi Berdasarkan Mode
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let pointA = null;
 
 renderer.domElement.addEventListener('pointerdown', (event) => {
-    if (event.button !== 0) return; // Hiraukan klik kanan
+    if (event.button !== 0) return;
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
@@ -87,15 +102,9 @@ renderer.domElement.addEventListener('pointerdown', (event) => {
 
     if (intersects.length > 0) {
         const point = intersects[0].point;
-        
-        // PENGHUBUNG MODE
-        if (currentMode === 'fold') {
-            handleFold(point);
-        } else if (currentMode === 'pocket') {
-            handlePocket(point);
-        } else if (currentMode === 'lock') {
-            handleLock(point);
-        }
+        if (currentMode === 'fold') handleFold(point);
+        else if (currentMode === 'pocket') handlePocket(point);
+        else if (currentMode === 'lock') handleLock(point);
     }
 });
 
@@ -109,21 +118,19 @@ function handleFold(point) {
         const pointB = point.clone();
         markerB.position.copy(pointB);
         markerB.visible = true;
-        jalankanLipatan(pointA, pointB, 1.0); // Lipatan Standar
+        jalankanLipatan(pointA, pointB, 1.0);
         resetSelection();
     }
 }
 
 function handlePocket(point) {
-    // Pocket: Membuat sedikit celah dengan membalikkan normal secara mikro
     const dir = new THREE.Vector3(0, 0.05, 0); 
     const pTarget = point.clone().add(dir);
-    jalankanLipatan(point, pTarget, 0.15); // Intensitas rendah untuk kantong
+    jalankanLipatan(point, pTarget, 0.15);
     document.getElementById('status').innerText = "Kantong Berhasil Dibuat";
 }
 
 function handleLock(point) {
-    // Lock: Menaikkan layer secara signifikan agar ujung "menembus" lapisan bawah
     layerStack += 3; 
     const dir = new THREE.Vector3(0, -0.1, 0);
     const pTarget = point.clone().add(dir);
@@ -152,7 +159,6 @@ function jalankanLipatan(A, B, intensity) {
             const reflection = normal.clone().multiplyScalar(2 * dist * intensity);
             vWorld.sub(reflection);
             let vLocal = vWorld.applyMatrix4(invMat);
-            // Offset dinamis sesuai tumpukan (layering)
             pos.setXYZ(i, vLocal.x, vLocal.y, vLocal.z + (0.012 * layerStack));
         }
     }
@@ -168,9 +174,9 @@ function gambarJejakDiTekstur(midWorld, normalWorld) {
     const centerY = (1 - (localMid.y + 2) / 4) * 1024;
     const dirX = -localNormal.y; const dirY = localNormal.x;
 
-    ctx.strokeStyle = '#3498db';
+    ctx.strokeStyle = 'rgba(52, 152, 219, 0.6)';
     ctx.lineWidth = 2;
-    ctx.setLineDash([15, 10]); // Visualisasi Bekas Lipatan (Crease Line)
+    ctx.setLineDash([15, 10]);
     ctx.beginPath();
     ctx.moveTo(centerX + dirX * 2000, centerY - dirY * 2000);
     ctx.lineTo(centerX - dirX * 2000, centerY + dirY * 2000);
