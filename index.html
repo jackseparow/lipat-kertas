@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Origami Geometri 3D: Final Fix</title>
+    <title>Origami Geometri 3D: Crease Pattern</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -19,27 +19,33 @@
             background: #f8f9fa; border-left: 5px solid #2980b9;
             color: #2c3e50; font-weight: bold; font-size: 0.9em;
         }
-        h2 { margin: 0 0 10px 0; color: #1a1a2e; font-size: 1.2em; }
         #btn-container {
-            position: absolute; bottom: 30px; right: 30px; display: flex; gap: 10px; z-index: 200;
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 15px; z-index: 200;
         }
         .action-btn {
-            padding: 12px 25px; border: none; border-radius: 50px;
-            background: #e74c3c; color: white; font-weight: bold;
-            cursor: pointer; pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            padding: 12px 20px; border: none; border-radius: 8px;
+            color: white; font-weight: bold; cursor: pointer; 
+            pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: 0.2s; min-width: 120px;
         }
+        .btn-fold { background: #3498db; }
+        .btn-undo { background: #f39c12; }
+        .btn-reset { background: #e74c3c; }
+        .action-btn:hover { opacity: 0.9; transform: translateY(-2px); }
     </style>
 </head>
 <body>
     <div id="overlay">
-        <h2>Simulasi Origami 3D</h2>
-        <p>• <b>Klik Kiri:</b> Pilih Titik<br>
-           • <b>Klik Kanan:</b> Putar Kamera</p>
+        <h2>Taman Numerasi Origami</h2>
+        <p>• Pilih 2 titik untuk melipat.<br>
+           • Gunakan <b>Buka Lipatan</b> untuk melihat jejak garisnya.</p>
         <div id="status" class="status-box">Pilih Titik Asal...</div>
     </div>
 
     <div id="btn-container">
-        <button class="action-btn" onclick="resetKertas()">Reset Kertas</button>
+        <button class="action-btn btn-undo" onclick="bukaLipatan()">Buka Lipatan</button>
+        <button class="action-btn btn-reset" onclick="resetKertas()">Reset Total</button>
     </div>
 
     <script src="origami-touch.js"></script>
