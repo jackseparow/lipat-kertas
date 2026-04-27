@@ -3,48 +3,64 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Origami Geometri 3D: Pocket & Locking Fold</title>
+    <title>Origami Architect: Advanced Interaction</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #0f0c29; }
         #overlay {
             position: absolute; top: 20px; left: 20px;
-            background: rgba(255, 255, 255, 0.9); padding: 20px;
-            border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            pointer-events: none; max-width: 300px; z-index: 100;
+            background: rgba(255, 255, 255, 0.9); padding: 15px;
+            border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            pointer-events: none; max-width: 280px; z-index: 100;
         }
         .status-box {
-            margin-top: 15px; padding: 12px; border-radius: 8px;
+            margin-top: 10px; padding: 10px; border-radius: 6px;
             background: #f8f9fa; border-left: 5px solid #2980b9;
-            color: #2c3e50; font-weight: bold; font-size: 0.9em;
+            color: #2c3e50; font-weight: bold; font-size: 0.85em;
         }
-        #btn-container {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 15px; z-index: 200;
+        
+        /* Menu Mode Interaksi */
+        #mode-menu {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; gap: 10px; background: rgba(0,0,0,0.7);
+            padding: 10px; border-radius: 50px; z-index: 200;
         }
-        .action-btn {
-            padding: 12px 20px; border: none; border-radius: 8px;
-            color: white; font-weight: bold; cursor: pointer; 
-            pointer-events: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            transition: 0.2s; min-width: 120px;
+        .mode-btn {
+            padding: 10px 20px; border: none; border-radius: 25px;
+            color: white; font-weight: bold; cursor: pointer;
+            transition: 0.3s; background: #444; font-size: 0.8em;
         }
-        .btn-undo { background: #f39c12; }
-        .btn-reset { background: #e74c3c; }
-        .action-btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        .mode-btn.active { background: #2980b9; box-shadow: 0 0 15px #2980b9; }
+        
+        /* Sidebar Tools */
+        #side-tools {
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            display: flex; flex-direction: column; gap: 12px; z-index: 200;
+        }
+        .tool-btn {
+            width: 50px; height: 50px; border-radius: 50%; border: none;
+            background: #e74c3c; color: white; cursor: pointer; font-size: 1.2em;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
     <div id="overlay">
-        <h2>Advanced Origami Simulator</h2>
-        <p>• Pilih 2 titik untuk melipat.<br>
-           • Lipatan baru otomatis akan berada di atas/dalam lipatan lama (Pocketing).</p>
+        <h2>Origami Simulator</h2>
+        <p id="mode-desc" style="color:#2980b9; font-weight:bold;">Mode: MELIPAT</p>
         <div id="status" class="status-box">Pilih Titik Asal...</div>
     </div>
 
-    <div id="btn-container">
-        <button class="action-btn btn-undo" onclick="window.bukaLipatan()">Buka Lipatan</button>
-        <button class="action-btn btn-reset" onclick="window.resetKertas()">Reset Total</button>
+    <div id="mode-menu">
+        <button id="btn-fold" class="mode-btn active" onclick="setMode('fold')">MELIPAT</button>
+        <button id="btn-pocket" class="mode-btn" onclick="setMode('pocket')">BUAT KANTONG</button>
+        <button id="btn-lock" class="mode-btn" onclick="setMode('lock')">KUNCI UJUNG</button>
+    </div>
+
+    <div id="side-tools">
+        <button class="tool-btn" style="background: #f39c12;" onclick="window.bukaLipatan()" title="Buka Lipatan">↺</button>
+        <button class="tool-btn" onclick="window.resetKertas()" title="Reset Total">R</button>
     </div>
 
     <script src="origami-touch.js"></script>
