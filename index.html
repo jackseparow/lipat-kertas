@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Origami Geometri 3D: Real Crease Texture</title>
+    <title>Origami Geometri 3D: Pocket & Locking Fold</title>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
@@ -12,7 +12,7 @@
             position: absolute; top: 20px; left: 20px;
             background: rgba(255, 255, 255, 0.9); padding: 20px;
             border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            pointer-events: none; max-width: 280px; z-index: 100;
+            pointer-events: none; max-width: 300px; z-index: 100;
         }
         .status-box {
             margin-top: 15px; padding: 12px; border-radius: 8px;
@@ -36,8 +36,9 @@
 </head>
 <body>
     <div id="overlay">
-        <h2>Taman Numerasi</h2>
-        <p>Garis jejak akan menempel secara permanen pada permukaan kertas saat kamu melipat.</p>
+        <h2>Advanced Origami Simulator</h2>
+        <p>• Pilih 2 titik untuk melipat.<br>
+           • Lipatan baru otomatis akan berada di atas/dalam lipatan lama (Pocketing).</p>
         <div id="status" class="status-box">Pilih Titik Asal...</div>
     </div>
 
