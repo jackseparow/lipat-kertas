@@ -1,53 +1,46 @@
-// 1. Inisialisasi Scene
+// --- KONFIGURASI DASAR ---
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setClearColor(0xdfe6e9);
+renderer.setClearColor(0x1a1a2e);
 document.body.appendChild(renderer.domElement);
 
-// 2. Kontrol Kamera (Klik Kanan untuk Putar, Klik Kiri untuk Lipat)
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.mouseButtons = { LEFT: null, MIDDLE: THREE.MOUSE.DOLLY, RIGHT: THREE.MOUSE.ROTATE };
+// --- LIGHTING ---
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+scene.add(ambientLight);
+const pointLight = new THREE.PointLight(0xffffff, 1);
+pointLight.position.set(10, 10, 10);
+scene.add(pointLight);
 
-// 3. Membuat Kertas (Material MeshPhong agar respon terhadap lampu)
-const geometry = new THREE.PlaneGeometry(4, 4, 100, 100);
-const material = new THREE.MeshPhongMaterial({ 
+// --- KERTAS ---
+// Gunakan MeshStandardMaterial agar terlihat lebih real
+const geometry = new THREE.PlaneGeometry(4, 4, 128, 128);
+const material = new THREE.MeshStandardMaterial({ 
     color: 0xffffff, 
-    side: THREE.DoubleSide, 
-    shininess: 30 
+    side: THREE.DoubleSide,
+    flatShading: false
 });
 const paper = new THREE.Mesh(geometry, material);
-// Tidurkan kertas di lantai (Sumbu XZ)
-paper.rotation.x = -Math.PI / 2;
 scene.add(paper);
 
-// Pencahayaan
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(5, 10, 7.5);
-scene.add(dirLight);
-
-scene.add(new THREE.GridHelper(10, 10));
-camera.position.set(0, 5, 5);
-camera.lookAt(0, 0, 0);
-
-// 4. Penanda Visual (Marker Bola)
-const markerGeo = new THREE.SphereGeometry(0.06);
-const markerA = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ color: 0xff0000 }));
-const markerB = new THREE.Mesh(markerGeo, new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
+// --- MARKER (PENANDA) ---
+const markerA = new THREE.Mesh(new THREE.SphereGeometry(0.07), new THREE.MeshBasicMaterial({ color: 0xff0000 }));
+const markerB = new THREE.Mesh(new THREE.SphereGeometry(0.07), new THREE.MeshBasicMaterial({ color: 0x00ff00 }));
 markerA.visible = markerB.visible = false;
-scene.add(markerA);
-scene.add(markerB);
+scene.add(markerA, markerB);
 
-// 5. Logika Interaksi Titik ke Titik
+camera.position.z = 6;
+
+// --- LOGIKA INTERAKSI ---
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 let pointA = null;
 const statusLabel = document.getElementById('status');
 
 window.addEventListener('mousedown', (event) => {
-    if (event.button !== 0) return; // Hanya respon klik kiri
+    // Hanya proses klik kiri
+    if (event.button !== 0) return;
 
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
     mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
@@ -56,75 +49,72 @@ window.addEventListener('mousedown', (event) => {
     const intersects = raycaster.intersectObject(paper);
 
     if (intersects.length > 0) {
-        const clickedPoint = intersects[0].point;
+        const point = intersects[0].point;
 
         if (!pointA) {
-            // Step 1: Ambil Titik Asal
-            pointA = clickedPoint.clone();
-            markerA.position.copy(pointA);
-            markerA.position.y += 0.05; // Angkat dikit agar tidak tenggelam
+            // Pilih titik pertama
+            pointA = point.clone();
+            markerA.position.set(pointA.x, pointA.y, 0.1);
             markerA.visible = true;
             markerB.visible = false;
-            
-            statusLabel.innerText = "Pilih Titik Tujuan";
-            statusLabel.style.background = "#fff3cd";
-            statusLabel.style.color = "#856404";
+            statusLabel.innerText = "Pilih Titik Tujuan...";
         } else {
-            // Step 2: Ambil Titik Tujuan & Jalankan Lipatan
-            const pointB = clickedPoint.clone();
-            markerB.position.copy(pointB);
-            markerB.position.y += 0.05;
+            // Pilih titik kedua
+            const pointB = point.clone();
+            markerB.position.set(pointB.x, pointB.y, 0.1);
             markerB.visible = true;
-
-            hitungDanLipat(pointA, pointB);
             
-            // Reset state
+            lipatGeometri(pointA, pointB);
+            
+            // Reset
             pointA = null;
             setTimeout(() => {
-                statusLabel.innerText = "Pilih Titik Asal";
-                statusLabel.style.background = "#e8f4fd";
-                statusLabel.style.color = "#2980b9";
-                markerA.visible = markerB.visible = false;
-            }, 1200);
+                statusLabel.innerText = "Menunggu Titik Asal...";
+                markerA.visible = false;
+                markerB.visible = false;
+            }, 1500);
         }
     }
 });
 
-// 6. Algoritma Refleksi Geometri
-function hitungDanLipat(A, B) {
-    const positions = paper.geometry.attributes.position;
+function lipatGeometri(A, B) {
+    const pos = paper.geometry.attributes.position;
     
-    // Titik tengah antara A dan B sebagai "jangkar" garis lipat
+    // Titik tengah (midpoint) dan Normal (arah AB)
     const mid = new THREE.Vector3().addVectors(A, B).multiplyScalar(0.5);
-    // Vektor arah dari A ke B sebagai Normal garis lipat
     const normal = new THREE.Vector3().subVectors(B, A).normalize();
 
-    for (let i = 0; i < positions.count; i++) {
-        // Ambil vertex dan konversi ke koordinat dunia (karena mesh diputar)
-        let localP = new THREE.Vector3(positions.getX(i), positions.getY(i), positions.getZ(i));
-        let worldP = localP.clone().applyMatrix4(paper.matrixWorld);
+    for (let i = 0; i < pos.count; i++) {
+        let P = new THREE.Vector3(pos.getX(i), pos.getY(i), pos.getZ(i));
 
-        // Vektor dari Mid ke Titik P
-        const v = new THREE.Vector3().subVectors(worldP, mid);
+        // Hitung jarak titik P ke garis lipat (midpoint)
+        const v = new THREE.Vector3().subVectors(P, mid);
         const dot = v.dot(normal);
 
-        // Jika dot < 0, berarti titik berada di sisi asal (A) -> Lipat/Refleksi
+        // Jika titik P berada di sisi titik A (Asal), lakukan refleksi
         if (dot < 0) {
+            // Rumus Refleksi: P' = P - 2 * (v . normal) * normal
             const reflection = normal.clone().multiplyScalar(2 * dot);
-            worldP.sub(reflection);
+            P.sub(reflection);
             
-            // Kembalikan ke koordinat lokal mesh
-            const finalP = worldP.clone().applyMatrix4(paper.matrixWorld.clone().invert());
-            
-            positions.setXYZ(i, finalP.x, finalP.y, finalP.z + 0.015);
+            // Set posisi baru dengan sedikit offset Z agar tidak tumpang tindih
+            pos.setXYZ(i, P.x, P.y, P.z + 0.02);
         }
     }
-    positions.needsUpdate = true;
+    pos.needsUpdate = true;
 }
 
 function animate() {
     requestAnimationFrame(animate);
-    controls.update();
+    // Kita putar sedikit scenerio-nya agar terlihat 3D
+    paper.rotation.y = Math.sin(Date.now() * 0.001) * 0.1;
     renderer.render(scene, camera);
 }
 animate();
+
+// Handle Resize
+window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+});
